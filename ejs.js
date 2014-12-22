@@ -50,7 +50,6 @@ require.relative = function (parent) {
 
 
 require.register("ejs.js", function(module, exports, require){
-
 /*!
  * EJS
  * Copyright(c) 2012 TJ Holowaychuk <tj@vision-media.ca>
@@ -220,7 +219,19 @@ var parse = exports.parse = function(str, options){
       }
 
       while (~(n = js.indexOf("\n", n))) n++, lineno++;
-      if (js.substr(0, 1) == ':') js = filtered(js);
+      
+      switch(js.substr(0, 1)) {
+        case ':':
+          js = filtered(js);
+          break;
+        case '%':
+          js = " buf.push('<%" + js.substring(1).replace(/'/g, "\\'") + "%>');";
+          break;
+        case '#':
+          js = "";
+          break;
+      }
+      
       if (js) {
         if (js.lastIndexOf('//') > js.lastIndexOf('\n')) js += '\n';
         buf += prefix;
@@ -385,7 +396,11 @@ exports.renderFile = function(path, options, fn){
  */
 
 function resolveInclude(name, filename) {
-  var path = join(dirname(filename), name);
+  if (name[0].match(/(\'|\")/)) { //use absolute path if "path/"
+    name = name.replace(/(\'|\")/ig,"");
+    var dir = process.cwd();
+  };
+  var path = join((dir || dirname(filename)), name);
   var ext = extname(name);
   if (!ext) path += '.ejs';
   return path;
